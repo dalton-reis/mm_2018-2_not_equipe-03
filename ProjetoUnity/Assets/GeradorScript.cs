@@ -27,7 +27,7 @@ public class GeradorScript : MonoBehaviour {
     bool devePerguntar = true;
 	// Use this for initialization
 	void Start () {
-        velocity = new Vector3(8.0f, 0.0f, 0.0f);
+        velocity = new Vector3(38.0f, 0.0f, 0.0f);
         listaAtivos = new List<GameObject>();
         setScore(0);
     }
@@ -90,20 +90,20 @@ public class GeradorScript : MonoBehaviour {
         {
             if (raia == 2 && player.transform.position.z < 0.0f)
             {
-                velocity.z = 4.5f;
+                velocity.z = 18f;
             } else
             if (raia == 2 && player.transform.position.z > 0.0f)
             {
-                velocity.z = -4.5f;
+                velocity.z = -18f;
             } else
             {
                 if (raia == 1)  
                 {
-                    velocity.z = 4.5f;
+                    velocity.z = 18f;
                 } else
                 if (raia == 3)  
                 {
-                    velocity.z = -4.5f;
+                    velocity.z = -18f;
                 }
             }
         } else  {
