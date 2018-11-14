@@ -12,6 +12,7 @@ public class GeradorScript : MonoBehaviour {
     public Camera cam;
     public Text points;
     public Text Question;
+    public Text Vidas;
     public AudioClip success;
     public AudioClip fail;
     public AudioSource ring;
@@ -19,9 +20,10 @@ public class GeradorScript : MonoBehaviour {
     private float m_Success;
     private float m_Fail;
     private float m_QuarterNote;
+    private int[] valoresSorteio = { 0, 0, 0, 0, 0, 0, 1, 1, 2, 2 };
 
     Vector3 velocity;    
-    float pontoX = 106.0f;
+    float pontoX = 0.0f;
     int Score = 0;
     int primeiroValor, segundoValor, resp1, resp2, resp3;
     string sinal;
@@ -36,9 +38,10 @@ public class GeradorScript : MonoBehaviour {
 
     int nivel = 1;
     int progress = 0;
+    int vidas = 3;
 	// Use this for initialization
 	void Start () {
-        velocity = new Vector3(38.0f, 0.0f, 0.0f);
+        velocity = new Vector3(18.0f, 0.0f, 0.0f);
         listaAtivos = new List<GameObject>();
         setScore(0);
     }
@@ -57,6 +60,9 @@ public class GeradorScript : MonoBehaviour {
             setScore(Score + 10);
             progress++;
 
+            if (Score > 0 && Score % 100 == 0)
+                vidas++;
+
             if (progress == 5)
             {
                 nivel++;
@@ -68,7 +74,15 @@ public class GeradorScript : MonoBehaviour {
         {
             ring.clip = fail;
             ring.Play();
-            setScore(Score - 10);
+            vidas--;
+            Vidas.text = "Vidas: ";
+            for (int i = 0; i < vidas; i++)
+                Vidas.text = Vidas.text + "♥ ";
+
+            if (vidas == 0)
+            {
+                //
+            }
         }
 
         if (resultado != a1.GetComponent<BoxScript>().getResult())
@@ -142,9 +156,11 @@ public class GeradorScript : MonoBehaviour {
         if (devePerguntar && cam.transform.position.x > 70.0f) 
             LancarPergunta();
             
-        if ((pontoX - 106.0f) - cam.transform.position.x < (120.8f * 2))
+        if (pontoX - cam.transform.position.x < (120.8f * 2))
         {
-            GameObject obj = Instantiate(listaPrefab[0], new Vector3(pontoX, 50.0f, 0.0f), Quaternion.LookRotation(new Vector3(0.0f, 90.0f, 0.0f)));
+            int sorteioResult = Random.Range(0, 10);
+            var prefabIndex = valoresSorteio[sorteioResult];
+            GameObject obj = Instantiate(listaPrefab[prefabIndex], new Vector3(pontoX, 50.0f, 0.0f), Quaternion.Euler(new Vector3(0.0f, 0.0f, 0.0f)));
             pontoX += 120.8f;
 
             listaAtivos.Add(obj);
@@ -158,7 +174,7 @@ public class GeradorScript : MonoBehaviour {
 
     void gerarValores() {
         var sinalRandom = Random.Range(0, 2);
-        sinal = sinais[0];
+        sinal = sinais[sinalRandom];
 
         switch(sinal)   {
             case "+":
@@ -168,9 +184,15 @@ public class GeradorScript : MonoBehaviour {
 
                 break;
             case "-":
-                respostaCerta = Random.Range(2, nivel * 10);
-                primeiroValor = Random.Range(1, respostaCerta);
-                segundoValor = respostaCerta - primeiroValor;
+                primeiroValor = Random.Range(2, nivel * 10);
+                respostaCerta = Random.Range(1, primeiroValor);
+                segundoValor = primeiroValor - respostaCerta;
+
+                break;
+            case "*":
+                primeiroValor = Random.Range(1, 10);
+                segundoValor = Random.Range(1, nivel);
+                respostaCerta = primeiroValor * segundoValor;
 
                 break;
         }
