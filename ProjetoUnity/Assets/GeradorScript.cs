@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Audio;
 
 public class GeradorScript : MonoBehaviour {
 
@@ -11,6 +12,13 @@ public class GeradorScript : MonoBehaviour {
     public Camera cam;
     public Text points;
     public Text Question;
+    public AudioClip success;
+    public AudioClip fail;
+    public AudioSource ring;
+
+    private float m_Success;
+    private float m_Fail;
+    private float m_QuarterNote;
 
     Vector3 velocity;    
     float pontoX = 106.0f;
@@ -25,6 +33,9 @@ public class GeradorScript : MonoBehaviour {
     int respostaCerta;
     int raia = 2;
     bool devePerguntar = true;
+
+    int nivel = 1;
+    int progress = 0;
 	// Use this for initialization
 	void Start () {
         velocity = new Vector3(38.0f, 0.0f, 0.0f);
@@ -39,9 +50,24 @@ public class GeradorScript : MonoBehaviour {
 
     public void validarResultado(int resultado) {
         Question.gameObject.SetActive(false);
-        if (resultado == respostaCerta)  {
+        if (resultado == respostaCerta)
+        {
+            ring.clip = success;
+            ring.Play();
             setScore(Score + 10);
-        } else  {            
+            progress++;
+
+            if (progress == 5)
+            {
+                nivel++;
+                progress = 0;
+            }               
+
+            velocity.x += 1.0f;
+        } else
+        {
+            ring.clip = fail;
+            ring.Play();
             setScore(Score - 10);
         }
 
@@ -113,7 +139,7 @@ public class GeradorScript : MonoBehaviour {
         cam.transform.position += velocity * Time.fixedDeltaTime;
         player.transform.position += velocity * Time.fixedDeltaTime;
 
-        if (devePerguntar && cam.transform.position.x % 200 < 2.0f) 
+        if (devePerguntar && cam.transform.position.x > 70.0f) 
             LancarPergunta();
             
         if ((pontoX - 106.0f) - cam.transform.position.x < (120.8f * 2))
@@ -127,8 +153,6 @@ public class GeradorScript : MonoBehaviour {
                 listaAtivos.Remove(objDestroy);
                 Destroy(objDestroy);
             }
-
-            velocity.x += 1.0f;
         }
     }
 
@@ -138,8 +162,14 @@ public class GeradorScript : MonoBehaviour {
 
         switch(sinal)   {
             case "+":
-                respostaCerta = Random.Range(0, 50);
-                primeiroValor = Random.Range(0, respostaCerta);
+                respostaCerta = Random.Range(2, nivel * 10);
+                primeiroValor = Random.Range(1, respostaCerta);
+                segundoValor = respostaCerta - primeiroValor;
+
+                break;
+            case "-":
+                respostaCerta = Random.Range(2, nivel * 10);
+                primeiroValor = Random.Range(1, respostaCerta);
                 segundoValor = respostaCerta - primeiroValor;
 
                 break;
@@ -147,8 +177,11 @@ public class GeradorScript : MonoBehaviour {
 
         List<int> excludes = new List<int>();
         excludes.Add(respostaCerta);
-        var caixaRandom = Random.Range(1, 3);
-        switch(caixaRandom) {
+        int caixaRandom = Random.Range(1, 4);
+        resp1 = 0;
+        resp2 = 0;
+        resp3 = 0;
+        switch (caixaRandom) {
             case 1:
                 resp1 = respostaCerta;
                 resp2 = RandomRangedResposta(respostaCerta, excludes);
@@ -198,15 +231,15 @@ public class GeradorScript : MonoBehaviour {
 
         teste += 1;
 
-        a1 = Instantiate(caixa, new Vector3(pontoX + 10.0f, 49.90f,  4.7f), Quaternion.Euler(new Vector3( 4.0f, -4.0f, - 6.0f)));
+        a1 = Instantiate(caixa, new Vector3(cam.transform.position.x + 150.0f + 10.0f, 49.90f,  4.7f), Quaternion.Euler(new Vector3( 4.0f, -4.0f, - 6.0f)));
         BoxScript box1 = a1.GetComponent<BoxScript>();
         box1.setResult(resp1);
 
-        a2 = Instantiate(caixa, new Vector3(pontoX + 5.0f, 49.92f,  0.0f), Quaternion.Euler(new Vector3( 0.0f,  0.0f, -10.0f)));
+        a2 = Instantiate(caixa, new Vector3(cam.transform.position.x + 150.0f + 5.0f, 49.92f,  0.0f), Quaternion.Euler(new Vector3( 0.0f,  0.0f, -10.0f)));
         BoxScript box2 = a2.GetComponent<BoxScript>();
         box2.setResult(resp2);
 
-        a3 = Instantiate(caixa, new Vector3(pontoX, 49.89f, -4.7f), Quaternion.Euler(new Vector3(-4.0f,  4.0f, - 0.0f)));
+        a3 = Instantiate(caixa, new Vector3(cam.transform.position.x + 150.0f, 49.89f, -4.7f), Quaternion.Euler(new Vector3(-4.0f,  4.0f, - 0.0f)));
         BoxScript box3 = a3.GetComponent<BoxScript>();
         box3.setResult(resp3);
     }
