@@ -16,24 +16,40 @@ public class GeradorScript : MonoBehaviour {
     public AudioClip success;
     public AudioClip fail;
     public AudioSource ring;
+    public AudioSource bgSound;
+    public bool mirroredMovement = false;
+    public bool offsetRelativeToSensor = false;
+    public KinectManager manager;
+    public GameObject panelRestart;
+    public GameObject panelStart;
+    public Text pontuacaoFinal;
 
     private float m_Success;
     private float m_Fail;
     private float m_QuarterNote;
+    private bool started = false;
     private int[] valoresSorteio = { 0, 0, 0, 0, 0, 0, 1, 1, 2, 2 };
+    protected GameObject offsetNode;
+
+    protected Transform bodyRoot;
+    protected KinectManager kinectManager;
+    protected int moveRate = 5;
+    protected float xOffset, yOffset, zOffset;
+	protected bool offsetCalibrated = false;
 
     Vector3 velocity;    
     float pontoX = 0.0f;
     int Score = 0;
     int primeiroValor, segundoValor, resp1, resp2, resp3;
     string sinal;
-    string[] sinais = {"+", "-", "*"};
+    string[] sinais = {"+", "-", "x"};
 
     int teste = 0;
     GameObject a1, a2, a3;
     List<GameObject> listaAtivos;
     int respostaCerta;
     int raia = 2;
+    bool inicou = false;
     bool devePerguntar = true;
 
     int nivel = 1;
@@ -44,6 +60,7 @@ public class GeradorScript : MonoBehaviour {
         velocity = new Vector3(18.0f, 0.0f, 0.0f);
         listaAtivos = new List<GameObject>();
         setScore(0);
+        bodyRoot = transform;
     }
 
     void setScore(int score)  {
@@ -56,12 +73,13 @@ public class GeradorScript : MonoBehaviour {
         if (resultado == respostaCerta)
         {
             ring.clip = success;
+            ring.time = 1;
             ring.Play();
             setScore(Score + 10);
             progress++;
 
             if (Score > 0 && Score % 100 == 0)
-                vidas++;
+                SetVidas(vidas + 1);
 
             if (progress == 5)
             {
@@ -74,15 +92,7 @@ public class GeradorScript : MonoBehaviour {
         {
             ring.clip = fail;
             ring.Play();
-            vidas--;
-            Vidas.text = "Vidas: ";
-            for (int i = 0; i < vidas; i++)
-                Vidas.text = Vidas.text + "♥ ";
-
-            if (vidas == 0)
-            {
-                //
-            }
+            SetVidas(vidas - 1);
         }
 
         if (resultado != a1.GetComponent<BoxScript>().getResult())
@@ -97,33 +107,64 @@ public class GeradorScript : MonoBehaviour {
         devePerguntar = true;
     }
 
-    void esquerda() {
+    public void SetVidas(int _vidas)
+    {
+        vidas = _vidas;
+        Vidas.text = "Vidas: ";
+        for (int i = 0; i < vidas; i++)
+            Vidas.text = Vidas.text + "♥ ";
+
+        if (vidas == 0)
+        {
+            bgSound.Stop();
+            devePerguntar = false;
+            pontuacaoFinal.text = "Pontuação: " + Score;
+            panelRestart.SetActive(true);
+        }
+    }
+
+    public void esquerda() {
         raia = 1;
     }
 
-    void centro()   {
+    public void centro()   {
         raia = 2;
     }
 
-    void direita()  {
+    public void direita()  {
         raia = 3;
+    }
+
+    public void Iniciar()
+    {
+        points.gameObject.SetActive(true);
+        Vidas.gameObject.SetActive(true);
+        panelStart.SetActive(false);
+
+        started = true;
+    }
+
+    public void resetFase()
+    {
+        cam.transform.position = new Vector3(0.0f, 54.0f, 0.0f);
+        player.transform.position = new Vector3(6.5f, 50.5f, 0.0f);
+        pontoX = 0.0f;
+        SetVidas(3);
+        setScore(0);
+        inicou = false;
+        devePerguntar = true;
+        panelRestart.SetActive(false);
+
+        for (int i = 0; i < listaAtivos.Count; i++)
+        {
+            GameObject objDestroy = listaAtivos[0];
+            listaAtivos.Remove(objDestroy);
+            Destroy(objDestroy);
+        }
     }
 	
 	// Update is called once per frame
-	void Update () {    
-        if (Input.GetKey("a"))  
-        {
-            esquerda();
-        } else
-        if (Input.GetKey("s"))  
-        {
-            centro();
-        } else
-        if (Input.GetKey("d"))  
-        {
-            direita();
-        } 
-
+	void Update () {            
         if ((raia == 1 && player.transform.position.z < 4.5f) || 
             (raia == 3 && player.transform.position.z > -4.5f) || 
             (raia == 2 && (player.transform.position.z > 0.1f || player.transform.position.z < -0.1f)))
@@ -150,10 +191,23 @@ public class GeradorScript : MonoBehaviour {
             velocity.z = 0.0f;
         }
 
-        cam.transform.position += velocity * Time.fixedDeltaTime;
-        player.transform.position += velocity * Time.fixedDeltaTime;
+        if (manager.Player1Calibrated && vidas > 0 && started)
+        {
+            inicou = true;
+            cam.transform.position += velocity * Time.fixedDeltaTime;
+            player.transform.position += velocity * Time.fixedDeltaTime;
 
-        if (devePerguntar && cam.transform.position.x > 70.0f) 
+            if (!bgSound.isPlaying)
+            {
+                bgSound.Play();
+            }
+        }
+        else
+        {
+            bgSound.Pause();
+        }
+
+        if (devePerguntar && cam.transform.position.x > 70.0f && vidas > 0 && started) 
             LancarPergunta();
             
         if (pontoX - cam.transform.position.x < (120.8f * 2))
@@ -173,7 +227,7 @@ public class GeradorScript : MonoBehaviour {
     }
 
     void gerarValores() {
-        var sinalRandom = Random.Range(0, 2);
+        int sinalRandom = Random.Range(0, 3);
         sinal = sinais[sinalRandom];
 
         switch(sinal)   {
@@ -189,7 +243,7 @@ public class GeradorScript : MonoBehaviour {
                 segundoValor = primeiroValor - respostaCerta;
 
                 break;
-            case "*":
+            case "x":
                 primeiroValor = Random.Range(1, 10);
                 segundoValor = Random.Range(1, nivel);
                 respostaCerta = primeiroValor * segundoValor;
@@ -249,10 +303,11 @@ public class GeradorScript : MonoBehaviour {
         devePerguntar = false;
         gerarValores();
 
-        Question.text = "Quanto é " + primeiroValor.ToString() + sinal + segundoValor.ToString() + "?";
+        Question.text = "Quanto é " + primeiroValor.ToString() + " " + sinal + " " + segundoValor.ToString() + "?";
 
         teste += 1;
 
+        Debug.Log(cam.transform.position.x);
         a1 = Instantiate(caixa, new Vector3(cam.transform.position.x + 150.0f + 10.0f, 49.90f,  4.7f), Quaternion.Euler(new Vector3( 4.0f, -4.0f, - 6.0f)));
         BoxScript box1 = a1.GetComponent<BoxScript>();
         box1.setResult(resp1);

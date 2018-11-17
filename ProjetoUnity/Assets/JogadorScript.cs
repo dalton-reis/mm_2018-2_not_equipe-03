@@ -18,7 +18,6 @@ public class JogadorScript : MonoBehaviour {
 	void OnCollisionEnter(Collision other) 
     {
 		if (other.gameObject.tag == "Caixa")	{
-			Debug.Log(other.gameObject.tag);
 			gerador.validarResultado(other.gameObject.GetComponent<BoxScript>().getResult());
 			Destroy(other.gameObject);
 		}
